@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "256111851951",
+    "project_id": "distribuidora-cab63",
+    "storage_bucket": "distribuidora-cab63.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:256111851951:android:b853e4a584a820bef8175a",
+        "android_client_info": {
+          "package_name": "com.example.distribuidora"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA514bD0eKEEfGMuNX9dP0tyHedwcXBShY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

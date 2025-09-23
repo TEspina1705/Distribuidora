@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Distribuidora</string>
+    <string name="msg_CalculoDistancia">Calcular Distancia Despacho</string>
+</resources>
