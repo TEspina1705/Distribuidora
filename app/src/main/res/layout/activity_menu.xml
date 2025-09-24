@@ -8,48 +8,30 @@
     tools:context=".MenuActivity">
 
     <LinearLayout
-        android:layout_width="409dp"
-        android:layout_height="889dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="16dp"
-        android:layout_marginEnd="16dp"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:orientation="vertical"
-        app:layout_constraintEnd_toEndOf="parent"
+        android:gravity="center"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintEnd_toEndOf="parent">
 
-        <TextView
-            android:id="@+id/txt_email"
-            android:layout_width="match_parent"
-            android:layout_height="61dp"
-            android:text="Email" />
+        <Button
+            android:id="@+id/btn_despacho"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Despacho" />
 
         <Space
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="40dp" />
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="140dp"
-            android:orientation="horizontal">
-
-            <Button
-                android:id="@+id/btn_despacho"
-                android:layout_width="161dp"
-                android:layout_height="wrap_content"
-                android:text="Despacho" />
-
-            <Space
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight="1" />
-
-            <Button
-                android:id="@+id/btn_cerrar"
-                android:layout_width="157dp"
-                android:layout_height="wrap_content"
-                android:text="Cerrar Sesion" />
-        </LinearLayout>
-
+        <Button
+            android:id="@+id/btn_cerrar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Cerrar Sesión" />
     </LinearLayout>
+
 </androidx.constraintlayout.widget.ConstraintLayout>

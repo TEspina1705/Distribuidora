@@ -29,9 +29,10 @@ import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.HashMap;
 import java.util.Map;
-
+//pantalla Calculo de Distancia
 public class DistanciaActivity2 extends AppCompatActivity  {
 
+    //variables
     private FusedLocationProviderClient fusedLocationProviderClient;
     private TextView txtubi ;
     private TextView monto;
@@ -40,16 +41,14 @@ public class DistanciaActivity2 extends AppCompatActivity  {
     private TextView sinCobro;
     private TextView dist;
     Button botonCalcular;
-
     DatabaseReference database;
 
-    // Radio de la Tierra en kilómetros
-    private static final double RADIO_TIERRA = 6371.0;
-    //latidid y longitud de usuario ubicacion
-    double latitudUbi ;
+    private static final double RADIO_TIERRA = 6371.0;// Radio de la Tierra en kilómetros
+
+    double latitudUbi ;  //latidid y longitud de ubicacion de usuario
     double longitudUbi ;
-    //ubicacion de Bodega Distribuidora
-    private static final double latitudPlaza = -33.438056;
+
+    private static final double latitudPlaza = -33.438056;//ubicacion de Bodega Distribuidora plaza de armas
     private static final double LongitudPlaza = -70.650278;
 
     @Override
@@ -58,7 +57,9 @@ public class DistanciaActivity2 extends AppCompatActivity  {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_distancia2);
 
+        //conecta "ubicaciones" con Firebase
         database = FirebaseDatabase.getInstance().getReference("ubicaciones");
+        //conexion los editText y textView con codigo
         txtubi = findViewById(R.id.txt_ubi);
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
         monto = findViewById(R.id.txt_monto);
@@ -67,9 +68,10 @@ public class DistanciaActivity2 extends AppCompatActivity  {
         sinCobro = findViewById(R.id.txt_sincobro);
         dist = findViewById(R.id.txt_dist);
 
+        //obtiene ubicacion cuando se abre la pantalla
         obtenerUbicacionActual();
 
-        botonCalcular = findViewById(R.id.btn_calcular);
+        botonCalcular = findViewById(R.id.btn_calcular);//calculo monto despacho al presionar boton calcular
 
         botonCalcular.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -85,7 +87,7 @@ public class DistanciaActivity2 extends AppCompatActivity  {
     }
 
     private void obtenerUbicacionActual(){
-
+        //verifica permisos
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
         && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)
         {
@@ -93,21 +95,20 @@ public class DistanciaActivity2 extends AppCompatActivity  {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, 1);
             return;
         }
+        //si tiene ubicacion la muestra en pantalla en "tu ubicación"
         fusedLocationProviderClient.getLastLocation().addOnSuccessListener(this, location -> {
             if(location != null){
                 txtubi.setText( "Latitud: "+location.getLatitude() + "\n" + "Longitud: "+location.getLongitude());
 
-                 latitudUbi = location.getLatitude();
+                 latitudUbi = location.getLatitude();//guarda en las variables la ubicacion
                  longitudUbi = location.getLongitude();
 
-                guardarUbicacionEnFirebase(latitudUbi, longitudUbi);
+                guardarUbicacionEnFirebase(latitudUbi, longitudUbi);//llama la funcion para guardar ubicacion en Firebase
             }
         });
 
     }
-
-
-
+    //funcion para guardar ubicacion en Firebase
     private void guardarUbicacionEnFirebase(double latitudUbi, double longitudUbi) {
         String id = database.push().getKey(); // genera un ID único
         Map<String, Object> datos = new HashMap<>();
@@ -125,7 +126,7 @@ public class DistanciaActivity2 extends AppCompatActivity  {
                     );
         }
     }
-
+    //metodo maneja respuesta de usuario con los permisos
     public void onRequestPermissionsResult(int requestCode,  @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
@@ -139,7 +140,7 @@ public class DistanciaActivity2 extends AppCompatActivity  {
         }
     }
 
-
+    //fórmula de Haversine para calcular distancia en km entre dos puntos gps
     public static double calcularDistancia(double lat1, double lon1, double lat2, double lon2) {
         // Convertir de grados a radianes
         double dLat = Math.toRadians(lat2 - lat1);
@@ -158,10 +159,10 @@ public class DistanciaActivity2 extends AppCompatActivity  {
 
 
     private void calculoDespacho (){
-
+    //calcula la distancia de usuario con la bodega
         double distancia = calcularDistancia(latitudUbi,longitudUbi, latitudPlaza, LongitudPlaza );
         dist.setText(String.valueOf(Math.round(distancia)) + "Km");
-
+    //reglas de negocio para calcular valor despacho
         String costoDespacho ;
         Double costo = 0D;
         if (distancia > 20) {
@@ -178,7 +179,7 @@ public class DistanciaActivity2 extends AppCompatActivity  {
         }
 
         Double tot = Double.parseDouble(monto.getText().toString().trim()) + costo;
-        total.setText(String.valueOf(Math.round(tot)));
+        total.setText(String.valueOf(Math.round(tot)));//muestra total de compra + despacho
 
     }
 
