@@ -5,6 +5,7 @@ import static android.widget.Toast.*;
 import android.Manifest;
 import android.app.jank.RelativeFrameTimeHistogram;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -24,32 +25,39 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.HashMap;
 import java.util.Map;
 //pantalla Calculo de Distancia
-public class DistanciaActivity2 extends AppCompatActivity  {
+public class DistanciaActivity2 extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnMapClickListener {
 
     //variables
     private FusedLocationProviderClient fusedLocationProviderClient;
+    private GoogleMap mMap;
+    private DatabaseReference database;
+
     private TextView txtubi ;
     private TextView monto;
     private TextView valorDespacho;
     private TextView total;
     private TextView sinCobro;
     private TextView dist;
-    Button botonCalcular;
-    DatabaseReference database;
-
-    private static final double RADIO_TIERRA = 6371.0;// Radio de la Tierra en kilómetros
+    private Button botonCalcular;
 
     double latitudUbi ;  //latidid y longitud de ubicacion de usuario
     double longitudUbi ;
-
     private static final double latitudPlaza = -33.438056;//ubicacion de Bodega Distribuidora plaza de armas
     private static final double LongitudPlaza = -70.650278;
+    private static final double RADIO_TIERRA = 6371.0;// Radio de la Tierra en kilómetros
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,20 +67,24 @@ public class DistanciaActivity2 extends AppCompatActivity  {
 
         //conecta "ubicaciones" con Firebase
         database = FirebaseDatabase.getInstance().getReference("ubicaciones");
-        //conexion los editText y textView con codigo
+        //vinculamos codigo con las vistas
         txtubi = findViewById(R.id.txt_ubi);
-        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
         monto = findViewById(R.id.txt_monto);
         valorDespacho = findViewById(R.id.edit_valorDespacho);
         total = findViewById(R.id.edit_Total);
         sinCobro = findViewById(R.id.txt_sincobro);
         dist = findViewById(R.id.txt_dist);
+        botonCalcular = findViewById(R.id.btn_calcular);
+        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
+
+        //Inicializar Mapa
+        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.mapFragment);
+        if (mapFragment != null) mapFragment.getMapAsync(this);
+
 
         //obtiene ubicacion cuando se abre la pantalla
         obtenerUbicacionActual();
-
-        botonCalcular = findViewById(R.id.btn_calcular);//calculo monto despacho al presionar boton calcular
-
+        //Calcular despacho al presionar botón calcular
         botonCalcular.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -100,14 +112,18 @@ public class DistanciaActivity2 extends AppCompatActivity  {
             if(location != null){
                 txtubi.setText( "Latitud: "+location.getLatitude() + "\n" + "Longitud: "+location.getLongitude());
 
-                 latitudUbi = location.getLatitude();//guarda en las variables la ubicacion
+                 latitudUbi = location.getLatitude();//guarda en las variables la ubicación
                  longitudUbi = location.getLongitude();
 
                 guardarUbicacionEnFirebase(latitudUbi, longitudUbi);//llama la funcion para guardar ubicacion en Firebase
+                mostrarUbicacionEnMapa(new LatLng(latitudUbi, longitudUbi));
             }
         });
 
     }
+
+
+
     //funcion para guardar ubicacion en Firebase
     private void guardarUbicacionEnFirebase(double latitudUbi, double longitudUbi) {
         String id = database.push().getKey(); // genera un ID único
@@ -126,6 +142,80 @@ public class DistanciaActivity2 extends AppCompatActivity  {
                     );
         }
     }
+    //Metodo mostrar ubicacion en mapa
+    private void mostrarUbicacionEnMapa(LatLng ubicacion) {
+        if (mMap != null) {
+            mMap.clear();
+            mMap.addMarker(new MarkerOptions().position(ubicacion).title("Tu ubicación"));
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(ubicacion, 15));
+        }
+    }
+    //fórmula de Haversine para calcular distancia en km entre dos puntos gps
+    public static double calcularDistancia(double lat1, double lon1, double lat2, double lon2) {
+        // Convertir de grados a radianes
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        // Fórmula de Haversine
+        double a = Math.pow(Math.sin(dLat / 2), 2) +
+                Math.cos(Math.toRadians(lat1)) *
+                        Math.cos(Math.toRadians(lat2)) *
+                        Math.pow(Math.sin(dLon / 2), 2);
+        double c = 2 * Math.asin(Math.sqrt(a));
+        return RADIO_TIERRA * c;
+    }
+    //Calcular despacho
+    private void calculoDespacho (){
+        //validar montos ingresados
+        String montoIngresado= monto.getText().toString().trim();
+        // Validación: vacío, cero o negativo
+        if (montoIngresado.isEmpty() || Double.parseDouble(montoIngresado) <= 0) {
+            Toast.makeText(this, "Ingrese un monto válido mayor a 0", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        double montoCompra = Double.parseDouble(montoIngresado);
+    //calcula la distancia de usuario con la bodega
+        double distancia = calcularDistancia(latitudUbi,longitudUbi, latitudPlaza, LongitudPlaza );
+        dist.setText(String.valueOf(Math.round(distancia)) + "Km");
+
+    //reglas de negocio para calcular valor despacho
+        double costo  = 0;
+        if (distancia > 20) {
+            sinCobro.setText("Despacho no disponible, excede el límite de 20 km.");
+            valorDespacho.setText("0");
+        } else if (montoCompra >= 50000) {
+            valorDespacho.setText("0");
+            sinCobro.setText("Despacho gratis por compras sobre $50.000");
+        } else if (montoCompra >= 25000) {
+            costo = distancia * 150;
+            valorDespacho.setText(String.valueOf(Math.round(costo)));
+            sinCobro.setText("");
+        } else {
+            costo = distancia * 300;
+            valorDespacho.setText(String.valueOf(Math.round(costo)));
+            sinCobro.setText("");
+        }
+
+        total.setText(String.valueOf(Math.round(montoCompra + costo)));//muestra total de compra + despacho
+
+    }
+    @Override
+    public void onMapReady(@NonNull GoogleMap googleMap) {
+        mMap = googleMap;
+        mMap.setOnMapClickListener(this);
+
+    }
+    @Override
+    public void onMapClick(@NonNull LatLng latLng) {
+        // Cuando el usuario toca el mapa, actualizamos su ubicación
+        latitudUbi = latLng.latitude;
+        longitudUbi = latLng.longitude;
+        txtubi.setText("Latitud: " + latitudUbi + "\nLongitud: " + longitudUbi);
+        mostrarUbicacionEnMapa(latLng);
+    }
+
+
+
+
     //metodo maneja respuesta de usuario con los permisos
     public void onRequestPermissionsResult(int requestCode,  @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -139,50 +229,4 @@ public class DistanciaActivity2 extends AppCompatActivity  {
             }
         }
     }
-
-    //fórmula de Haversine para calcular distancia en km entre dos puntos gps
-    public static double calcularDistancia(double lat1, double lon1, double lat2, double lon2) {
-        // Convertir de grados a radianes
-        double dLat = Math.toRadians(lat2 - lat1);
-        double dLon = Math.toRadians(lon2 - lon1);
-
-        // Fórmula de Haversine
-        double a = Math.pow(Math.sin(dLat / 2), 2) +
-                Math.cos(Math.toRadians(lat1)) *
-                        Math.cos(Math.toRadians(lat2)) *
-                        Math.pow(Math.sin(dLon / 2), 2);
-
-        double c = 2 * Math.asin(Math.sqrt(a));
-
-        return RADIO_TIERRA * c;
-    }
-
-
-    private void calculoDespacho (){
-    //calcula la distancia de usuario con la bodega
-        double distancia = calcularDistancia(latitudUbi,longitudUbi, latitudPlaza, LongitudPlaza );
-        dist.setText(String.valueOf(Math.round(distancia)) + "Km");
-    //reglas de negocio para calcular valor despacho
-        String costoDespacho ;
-        Double costo = 0D;
-        if (distancia > 20) {
-            sinCobro.setText("Despacho no disponible, excede el límite de 20 km.");
-            valorDespacho.setText("0");
-        } else if (Integer.parseInt(monto.getText().toString().trim()) >= 50000) {
-            valorDespacho.setText("0");
-        } else if (Integer.parseInt(monto.getText().toString().trim()) >= 25000 && Integer.parseInt(monto.getText().toString().trim()) < 50000) {
-            costo = distancia * 150;
-            valorDespacho.setText(String.valueOf(Math.round(costo)));
-        } else {
-            costo = distancia * 300;
-            valorDespacho.setText(String.valueOf(Math.round(costo)));
-        }
-
-        Double tot = Double.parseDouble(monto.getText().toString().trim()) + costo;
-        total.setText(String.valueOf(Math.round(tot)));//muestra total de compra + despacho
-
-    }
-
-
-
 }
