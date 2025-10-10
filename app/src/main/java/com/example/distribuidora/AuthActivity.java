@@ -44,11 +44,37 @@ public class AuthActivity extends AppCompatActivity {
                 String emailUser = email.getText().toString().trim();//obtiene email ingresado por usuario
                 String passUser = password.getText().toString().trim();//obtiene contraseña ingresada por usuario
 
-                if(emailUser.isEmpty() && passUser.isEmpty()){//verifica si los campos estan vacios
-                    Toast.makeText(AuthActivity.this, "Ingresar Datos", Toast.LENGTH_SHORT).show();
-                }else{
-                    loginUser(emailUser, passUser);//procede con loginUser()
+                // Validar si los campos están vacíos
+                if (emailUser.isEmpty()) {
+                    email.setError("Ingrese su correo electrónico");
+                    email.requestFocus();
+                    return;
                 }
+
+                // Validar formato de correo electrónico
+                if (!android.util.Patterns.EMAIL_ADDRESS.matcher(emailUser).matches()) {
+                    email.setError("Correo electrónico inválido");
+                    email.requestFocus();
+                    return;
+                }
+
+                // Validar contraseña vacía
+                if (passUser.isEmpty()) {
+                    password.setError("Ingrese su contraseña");
+                    password.requestFocus();
+                    return;
+                }
+
+                // Validar longitud mínima de contraseña
+                if (passUser.length() < 6) {
+                    password.setError("La contraseña debe tener al menos 6 caracteres");
+                    password.requestFocus();
+                    return;
+                }
+
+                // Si pasa todas las validaciones → intentar iniciar sesión
+                loginUser(emailUser, passUser);
+
             }
         });
     }
