@@ -18,7 +18,7 @@
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyAkl4amvj2Y8lWYarbAJtDUjUBrD3-O-Oc" />
+            android:value="" />
 
         <activity
             android:name=".DistanciaActivity2"
